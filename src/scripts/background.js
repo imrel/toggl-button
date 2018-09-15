@@ -1654,11 +1654,17 @@ window.TogglButton = {
   },
 
   contextMenuClick: function(info, tab) {
+    var projectId = null;
+    if(String(info.menuItemId).indexOf("toggl-")>=0){
+      projectId = Number(String(info.menuItemId).split('-')[2])
+    }
+
     TogglButton.createTimeEntry(
       {
         type: 'timeEntry',
         service: 'contextMenu',
-        description: info.selectionText || tab.title
+        description: info.selectionText || tab.title,
+        pid: projectId
       },
       null
     );
@@ -1844,14 +1850,34 @@ window.TogglButton = {
     if (show) {
       chrome.contextMenus.create({
         title: 'Start timer',
+        id: "TogglContextParent-page",
         contexts: ['page'],
         onclick: TogglButton.contextMenuClick
       });
       chrome.contextMenus.create({
         title: "Start timer with description '%s'",
+        id: "TogglContextParent-selection",
         contexts: ['selection'],
         onclick: TogglButton.contextMenuClick
       });
+
+      var projects = JSON.parse(db.get("projects"));
+      for(var project in projects){
+        chrome.contextMenus.create({
+          title: projects[project].name,
+          id: 'toggl-page-' + projects[project].id,
+          parentId: 'TogglContextParent-page',
+          contexts: ['page'],
+          onclick: TogglButton.contextMenuClick
+        });
+        chrome.contextMenus.create({
+          title: projects[project].name,
+          id: 'toggl-selection-' + projects[project].id,
+          parentId: 'TogglContextParent-selection',
+          contexts: ['selection'],
+          onclick: TogglButton.contextMenuClick
+        });
+      }
     } else {
       chrome.contextMenus.removeAll();
     }
